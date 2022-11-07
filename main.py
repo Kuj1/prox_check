@@ -11,6 +11,9 @@ from bs4 import BeautifulSoup
 
 API_KEY = '9csvVU6SRe4D4vlzkglWIiNQwbcrva4w'
 
+# total = 1 (minutes) * 60 (seconds) = 60s or 1m
+TIMEOUT = aiohttp.ClientTimeout(total=1 * 60)
+
 warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
 unchecked_proxies_file = os.path.join(os.getcwd(), 'data', 'proxies.txt')
@@ -54,7 +57,7 @@ async def check_proxies(url):
     date_time = datetime.now().strftime('%d.%m.%Y_%H:%M')
 
     for proxy in proxies:
-        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
+        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False), timeout=TIMEOUT) as session:
             try:
                 async with session.get(url, proxy=proxy) as resp:
                     if resp.status == 200:
@@ -83,8 +86,9 @@ if __name__ == '__main__':
     # asyncio.run(check_proxy_api(api_key=API_KEY, proxy_list=unchecked_proxies_file))
     url = 'https://2ip.ru'
 
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    future = asyncio.ensure_future(check_proxies(url=url))
-    loop.run_until_complete(future)
+    asyncio.run(check_proxies(url=url))
+    # loop = asyncio.new_event_loop()
+    # asyncio.set_event_loop(loop)
+    # future = asyncio.ensure_future(check_proxies(url=url))
+    # loop.run_until_complete(future)
 
