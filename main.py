@@ -81,11 +81,11 @@ async def check_proxies(url):
                         log.write(f'\n[PROXY]: {proxy}\n[ERROR]: {ex}\n' + '-' * 192)
 
 if __name__ == '__main__':
-    asyncio.run(check_proxy_api(api_key=API_KEY, proxy_list=unchecked_proxies_file))
-    # url = 'https://2ip.ru'
+    # asyncio.run(check_proxy_api(api_key=API_KEY, proxy_list=unchecked_proxies_file))
+    url = 'https://2ip.ru'
 
-    # loop = asyncio.new_event_loop()
-    # asyncio.set_event_loop(loop)
-    # future = asyncio.ensure_future(check_proxies(url=url))
-    # loop.run_until_complete(future)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    future = asyncio.ensure_future(check_proxies(url=url))
+    loop.run_until_complete(future)
 
