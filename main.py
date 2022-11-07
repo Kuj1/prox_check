@@ -1,94 +1,81 @@
-#!/usr/bin/env python3
-
 import asyncio
-import warnings
+import time
 import os
+import multiprocessing
+import concurrent.futures
 from datetime import datetime
 
 import aiohttp
-import requests
 from bs4 import BeautifulSoup
 
-API_KEY = '9csvVU6SRe4D4vlzkglWIiNQwbcrva4w'
-
-# total = 1 (minutes) * 60 (seconds) = 60s or 1m
-TIMEOUT = aiohttp.ClientTimeout(total=1 * 60)
-
-warnings.filterwarnings("ignore", category=DeprecationWarning) 
+# Timeout: total = total time for connection all proxies (in s.)
+#          connect = time to connect each of the proxies (in s.)
+TIMEOUT = aiohttp.ClientTimeout(total=300, connect=5)
+LINK = 'https://2ip.ru'
 
 unchecked_proxies_file = os.path.join(os.getcwd(), 'data', 'proxies.txt')
 checked_proxies_dir = os.path.join(os.getcwd(), 'data')
 
-
-def modify_proxy(path_to_proxy):
-    modified_proxy = set()
-    with open(path_to_proxy, 'r') as prox:
-        for proxy in prox.readlines():
-            proxy_params = proxy.replace('\n', '').split(':')
-            usefull_proxy = f'http://{proxy_params[2]}:{proxy_params[3]}@{proxy_params[0]}:{proxy_params[1]}'
-            modified_proxy.add(usefull_proxy)
-    
-    return modified_proxy
+with open(unchecked_proxies_file, 'r') as prox:
+    modified_proxy = list()
+    proxies = ''.join(prox.readlines()).strip().split('\n')
+    for proxy in proxies:
+        proxy_params = proxy.split(':')
+        usefully_proxy_params = f'http://{proxy_params[2]}:{proxy_params[3]}@{proxy_params[0]}:{proxy_params[1]}'
+        modified_proxy.append(usefully_proxy_params)
 
 
-# async def check_proxy_api(api_key, proxy_list):
-#     modified_proxys = modify_proxy(proxy_list)
-#     for proxy in modified_proxys:
-#         usefull_proxy = proxy.replace('http://', '').split('@')[::-1][0].split(':')[0]
-#
-#         # resp = requests.get(f'https://ipqualityscore.com/api/json/ip/{api_key}/{usefull_proxy}')
-#         async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
-#             try:
-#                 # print(f'https://ipqualityscore.com/api/json/ip/{api_key}/{proxy}')
-#                 async with session.get(f'https://ipqualityscore.com/api/json/ip/{api_key}/{usefull_proxy}') as resp:
-#                     if resp.status == 200:
-#                         body = await resp.json()
-#                         print(body['fraud_score'])
-#                     else:
-#                         print(resp.status)
-#             except Exception as ex:
-#                 print(ex)
-#                 continue
-
-
-async def check_proxies(url):
-    proxies = modify_proxy(unchecked_proxies_file)
-
+async def check_proxy(array_proxies, url):
     date_time = datetime.now().strftime('%d.%m.%Y_%H:%M')
 
-    for proxy in proxies:
+    try:
         async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False), timeout=TIMEOUT) as session:
-            try:
-                async with session.get(url, proxy=proxy) as resp:
-                    if resp.status == 200:
-                        print('OK')
-                        body = await resp.text()
-                        soup = BeautifulSoup(body, 'lxml')
+            async with session.get(url, proxy=array_proxies) as resp:
+                body = await resp.text()
+                soup = BeautifulSoup(body, 'lxml')
 
-                        ip = soup.find('div', class_='ip').text.strip()
-                        loc = soup.find('div', class_='value-country').text.strip()
+                ip = soup.find('div', class_='ip').text.strip()
+                loc = soup.find('div', class_='value-country').text.strip()
 
-                        print(f'{ip}\n{loc}\n')
+                print(f'{ip}\n{loc}\n')
 
-                        with open(os.path.join(checked_proxies_dir, f'checked_proxy_{date_time}.txt'), 'a') as checked:
-                            pre_proxy = proxy.replace('http://', '').split('@')[::-1]
-                            original_proxy = ':'.join(pre_proxy)
-                            checked.write(f'{original_proxy}\n')
-                    else:
-                        print(f'{resp.status}')
-                        continue
+                with open(os.path.join(checked_proxies_dir, f'checked_proxy_{date_time}.txt'), 'a') as checked:
+                    pre_proxy = proxy.replace('http://', '').split('@')[::-1]
+                    original_proxy = ':'.join(pre_proxy)
+                    checked.write(f'{original_proxy}\n')
 
-            except Exception as ex:
-                with open(os.path.join(checked_proxies_dir, f'log_{date_time}.txt'), 'a') as log:
-                    log.write(f'\n[PROXY]: {proxy}\n[ERROR]: {ex}\n' + '-' * 192)
+    except Exception as ex:
+        with open(os.path.join(checked_proxies_dir, f'log_{date_time}.txt'), 'a') as log:
+            log.write(f'\n[PROXY]: {array_proxies}\n[ERROR]: {ex}\n' + '-' * 192)
+
+    await asyncio.sleep(.15)
+
+
+def get_and_output(params, url):
+    asyncio.run(check_proxy(params, url))
+
+
+def main() -> None:
+    strt = time.time()
+    num_cores = multiprocessing.cpu_count()
+
+    futures = []
+    length_data = len(modified_proxy)
+
+    with concurrent.futures.ProcessPoolExecutor(num_cores) as executor:
+        for i_prox in modified_proxy:
+            new_future = executor.submit(
+                get_and_output,
+                params=i_prox,
+                url=LINK
+            )
+            futures.append(new_future)
+            length_data -= 1
+
+    concurrent.futures.wait(futures)
+    stp = time.time()
+    print(stp-strt)
+
 
 if __name__ == '__main__':
-    # asyncio.run(check_proxy_api(api_key=API_KEY, proxy_list=unchecked_proxies_file))
-    url = 'https://2ip.ru'
-
-    asyncio.run(check_proxies(url=url))
-    # loop = asyncio.new_event_loop()
-    # asyncio.set_event_loop(loop)
-    # future = asyncio.ensure_future(check_proxies(url=url))
-    # loop.run_until_complete(future)
-
+    main()
