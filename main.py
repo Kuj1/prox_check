@@ -6,8 +6,8 @@ import os
 from datetime import datetime
 
 import aiohttp
-# import requests
-# from bs4 import BeautifulSoup
+import requests
+from bs4 import BeautifulSoup
 
 API_KEY = '9csvVU6SRe4D4vlzkglWIiNQwbcrva4w'
 
@@ -58,22 +58,21 @@ async def check_proxies(url):
             try:
                 async with session.get(url, proxy=proxy) as resp:
                     if resp.status == 200:
-                        # print('OK')
-                        # body = await resp.text()
-                        # soup = BeautifulSoup(body, 'lxml')
-                        # print(soup)
+                        print('OK')
+                        body = await resp.text()
+                        soup = BeautifulSoup(body, 'lxml')
 
-                        # ip = soup.find('div', class_ = 'ip').text.strip()
-                        # loc = soup.find_all('div', class_='value-country').text.strip()
+                        ip = soup.find('div', class_='ip').text.strip()
+                        loc = soup.find('div', class_='value-country').text.strip()
 
-                        # print(f'{ip}\n{loc}\n')
+                        print(f'{ip}\n{loc}\n')
 
                         with open(os.path.join(checked_proxies_dir, f'checked_proxy_{date_time}.txt'), 'a') as checked:
                             pre_proxy = proxy.replace('http://', '').split('@')[::-1]
                             original_proxy = ':'.join(pre_proxy)
                             checked.write(f'{original_proxy}\n')
                     else:
-                        # print(f'{resp.status}')
+                        print(f'{resp.status}')
                         continue
 
             except Exception as ex:
