@@ -1,16 +1,19 @@
 import asyncio
 import time
 import os
-import multiprocessing
 import concurrent.futures
 from datetime import datetime
 
 import aiohttp
+from aiohttp import ServerTimeoutError
 from bs4 import BeautifulSoup
 
 # Timeout: total = total time for connection all proxies (in s.)
 #          connect = time to connect each of the proxies (in s.)
 TIMEOUT = aiohttp.ClientTimeout(total=300, connect=5)
+
+# Number of worker: the maximum number of processes
+NUM_WORKERS = 10
 LINK = 'https://2ip.ru'
 
 unchecked_proxies_file = os.path.join(os.getcwd(), 'data', 'proxies.txt')
@@ -37,10 +40,10 @@ async def check_proxy(array_proxies, url):
                 ip = soup.find('div', class_='ip').text.strip()
                 loc = soup.find('div', class_='value-country').text.strip()
 
-                print(f'{ip}\n{loc}\n')
+                print(f'{ip}\n{loc}\n{array_proxies}')
 
                 with open(os.path.join(checked_proxies_dir, f'checked_proxy_{date_time}.txt'), 'a') as checked:
-                    pre_proxy = proxy.replace('http://', '').split('@')[::-1]
+                    pre_proxy = array_proxies.replace('http://', '').split('@')[::-1]
                     original_proxy = ':'.join(pre_proxy)
                     checked.write(f'{original_proxy}\n')
 
@@ -56,13 +59,13 @@ def get_and_output(params, url):
 
 
 def main() -> None:
-    strt = time.time()
-    num_cores = multiprocessing.cpu_count()
+    start = time.time()
+    workers = NUM_WORKERS
 
     futures = []
     length_data = len(modified_proxy)
 
-    with concurrent.futures.ProcessPoolExecutor(num_cores) as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
         for i_prox in modified_proxy:
             new_future = executor.submit(
                 get_and_output,
@@ -73,8 +76,8 @@ def main() -> None:
             length_data -= 1
 
     concurrent.futures.wait(futures)
-    stp = time.time()
-    print(stp-strt)
+    stop = time.time()
+    print(stop-start)
 
 
 if __name__ == '__main__':
