@@ -5,8 +5,8 @@ import concurrent.futures
 from datetime import datetime
 
 import aiohttp
-from aiohttp import ServerTimeoutError
 from bs4 import BeautifulSoup
+
 
 # Timeout: total = total time for connection all proxies (in s.)
 #          connect = time to connect each of the proxies (in s.)
@@ -18,6 +18,10 @@ LINK = 'https://2ip.ru'
 
 unchecked_proxies_file = os.path.join(os.getcwd(), 'data', 'proxies.txt')
 checked_proxies_dir = os.path.join(os.getcwd(), 'data')
+
+headers = {
+    'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36'
+}
 
 with open(unchecked_proxies_file, 'r') as prox:
     modified_proxy = list()
@@ -32,7 +36,7 @@ async def check_proxy(array_proxies, url):
     date_time = datetime.now().strftime('%d.%m.%Y_%H:%M')
 
     try:
-        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False), timeout=TIMEOUT) as session:
+        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False), timeout=TIMEOUT, headers=headers) as session:
             async with session.get(url, proxy=array_proxies) as resp:
                 body = await resp.text()
                 soup = BeautifulSoup(body, 'lxml')
@@ -49,7 +53,8 @@ async def check_proxy(array_proxies, url):
 
     except Exception as ex:
         with open(os.path.join(checked_proxies_dir, f'log_{date_time}.txt'), 'a') as log:
-            log.write(f'\n[PROXY]: {array_proxies}\n[ERROR]: {ex}\n' + '-' * 192)
+            message = 'An exception of type {0} occurred.\n[ARGUMENTS]: {1!r}'.format(type(ex).__name__, ex.args)
+            log.write(f'\n[PROXY]: {array_proxies}\n[ERROR]: {ex}\n[TYPE EXCEPTION]: {message}\n' + '-' * len(message))
 
     await asyncio.sleep(.15)
 
