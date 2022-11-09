@@ -42,19 +42,18 @@ async def check_proxy(array_proxies, url):
                 soup = BeautifulSoup(body, 'lxml')
 
                 ip = soup.find('div', class_='ip').text.strip()
-                loc = soup.find('div', class_='value-country').text.strip()
 
-                print(f'{ip}\n{loc}\n{array_proxies}')
+                print(f'{ip}\n{array_proxies}')
 
-                with open(os.path.join(checked_proxies_dir, f'checked_proxy_{date_time}.txt'), 'a') as checked:
+                with open(os.path.join(checked_proxies_dir, f'checked_proxy.txt'), 'a') as checked:
                     pre_proxy = array_proxies.replace('http://', '').split('@')[::-1]
                     original_proxy = ':'.join(pre_proxy)
                     checked.write(f'{original_proxy}\n')
 
     except Exception as ex:
-        with open(os.path.join(checked_proxies_dir, f'log_{date_time}.txt'), 'a') as log:
+        with open(os.path.join(checked_proxies_dir, f'log.txt'), 'a') as log:
             message = 'An exception of type {0} occurred.\n[ARGUMENTS]: {1!r}'.format(type(ex).__name__, ex.args)
-            log.write(f'\n[PROXY]: {array_proxies}\n[ERROR]: {ex}\n[TYPE EXCEPTION]: {message}\n' + '-' * len(message))
+            log.write(f'\n[DATE]: {date_time}\n[PROXY]: {array_proxies}\n[ERROR]: {ex}\n[TYPE EXCEPTION]: {message}\n' + '-' * len(message))
 
     await asyncio.sleep(.15)
 
