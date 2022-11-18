@@ -13,7 +13,7 @@ TIMEOUT = aiohttp.ClientTimeout(total=300, connect=5)
 
 # Number of worker: the maximum number of processes
 NUM_WORKERS = 10
-LINK = 'https://2ip.ru'
+LINK = 'http://checkip.dyndns.org'
 
 API_KEY = '9csvVU6SRe4D4vlzkglWIiNQwbcrva4w'
 
@@ -45,7 +45,7 @@ async def check_proxy(array_proxies, url, api_key, score):
                 body = await resp.text()
                 soup = BeautifulSoup(body, 'lxml')
 
-                ip = soup.find('div', class_='ip').text.strip()
+                ip = soup.find('body').text.replace('Current IP Address:', '').strip()
 
                 api_url = f'https://ipqualityscore.com/api/json/ip/{api_key}/{ip}'
 

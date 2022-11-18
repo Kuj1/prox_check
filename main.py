@@ -14,7 +14,7 @@ TIMEOUT = aiohttp.ClientTimeout(total=300, connect=5)
 
 # Number of worker: the maximum number of processes
 NUM_WORKERS = 10
-LINK = 'https://2ip.ru'
+LINK = 'http://checkip.dyndns.org'
 
 unchecked_proxies_file = os.path.join(os.getcwd(), 'data', 'proxies.txt')
 checked_proxies_dir = os.path.join(os.getcwd(), 'data')
@@ -41,7 +41,7 @@ async def check_proxy(array_proxies, url):
                 body = await resp.text()
                 soup = BeautifulSoup(body, 'lxml')
 
-                ip = soup.find('div', class_='ip').text.strip()
+                ip = soup.find('body').text.replace('Current IP Address:', '').strip()
 
                 print(f'{ip}\n{array_proxies}')
 
