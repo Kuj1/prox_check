@@ -1,3 +1,5 @@
+#!/opt/prox_check/.venv/bin/python3
+
 import asyncio
 import time
 import os
